@@ -1,5 +1,5 @@
 use crate::core::document::Document;
-use crate::core::models::{SyncResult, Validation};
+use crate::core::models::{FindMatch, FindResult, SyncResult, Validation};
 use crate::error::{ContextError, InvalidReference, Result};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -152,5 +152,73 @@ impl Cache {
         }
 
         Ok(result)
+    }
+
+    /// Find documents that reference the given source file path.
+    ///
+    /// The source_path should be relative to the project root (e.g., "src/core/models.rs").
+    /// Returns a FindResult containing all documents that reference this file.
+    pub fn find_by_reference(&self, source_path: &str) -> Result<FindResult> {
+        let mut matches = Vec::new();
+
+        // Normalize the search path (remove leading ./ if present)
+        let normalized = source_path.trim_start_matches("./");
+
+        for doc in &self.documents {
+            // Check if this document references the given path
+            for ref_path in doc.references.keys() {
+                let ref_normalized = ref_path.trim_start_matches("./");
+                if ref_normalized == normalized {
+                    // Get the validation status for this document
+                    let validation = doc.validate()?;
+                    matches.push(FindMatch {
+                        document: doc.path.clone(),
+                        reference: ref_path.clone(),
+                        status: validation.status,
+                    });
+                    break; // Only add each document once per query
+                }
+            }
+        }
+
+        Ok(FindResult {
+            query: source_path.to_string(),
+            matches,
+        })
+    }
+
+    /// Resolve and validate a document path for selective sync.
+    ///
+    /// Returns the canonicalized path if valid, or an error if:
+    /// - The path doesn't exist
+    /// - The path is not within the .context directory
+    /// - The path is not a markdown file
+    pub fn resolve_doc_path(&self, user_path: &Path) -> Result<PathBuf> {
+        // Canonicalize the user-provided path
+        let canonical = user_path.canonicalize().map_err(|_| {
+            ContextError::DocumentNotFound(user_path.display().to_string())
+        })?;
+
+        // Canonicalize the context root for comparison
+        let canonical_root = self.root.canonicalize().map_err(|e| {
+            ContextError::IoError(e)
+        })?;
+
+        // Verify the path is within the .context directory
+        if !canonical.starts_with(&canonical_root) {
+            return Err(ContextError::DocumentNotInContext(
+                user_path.display().to_string(),
+            ));
+        }
+
+        // Verify it's a markdown file
+        if canonical.extension().is_none_or(|ext| ext != "md") {
+            return Err(ContextError::InvalidDocument(format!(
+                "Not a markdown file: {}",
+                user_path.display()
+            )));
+        }
+
+        Ok(canonical)
     }
 }

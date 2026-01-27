@@ -67,6 +67,10 @@ pub enum Commands {
     /// Synchronize cache metadata
     #[command(about = "Synchronize cache metadata with actual files")]
     Sync {
+        /// Path to a specific document to sync (syncs all if omitted)
+        #[arg(value_name = "PATH")]
+        path: Option<PathBuf>,
+
         /// Remove stale entries from cache
         #[arg(short, long)]
         cleanup: bool,
@@ -74,5 +78,13 @@ pub enum Commands {
         /// Force full re-hash of all documents
         #[arg(short, long)]
         force: bool,
+    },
+
+    /// Find documents that reference given source files
+    #[command(about = "Find documents that reference the given source file(s)")]
+    Find {
+        /// Source file paths to search for
+        #[arg(value_name = "PATH", required = true, num_args = 1..)]
+        paths: Vec<PathBuf>,
     },
 }

@@ -96,3 +96,23 @@ pub struct Frontmatter {
     pub references: HashMap<String, String>,
     pub updated: String,
 }
+
+/// A single match from a find operation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindMatch {
+    /// Path to the document that contains the reference
+    pub document: PathBuf,
+    /// The reference path as stored in the document
+    pub reference: String,
+    /// Validation status of the document
+    pub status: Status,
+}
+
+/// Result of a find operation for a single query path
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindResult {
+    /// The source file path that was queried
+    pub query: String,
+    /// Documents that reference this file
+    pub matches: Vec<FindMatch>,
+}

@@ -62,6 +62,9 @@ pub enum ContextError {
     #[error("Configuration error: {0}")]
     ConfigError(String),
 
+    #[error("Path is not within .context directory: {0}")]
+    DocumentNotInContext(String),
+
     #[error("Invalid references in {count} document(s)")]
     InvalidReferences {
         /// Number of documents with invalid references

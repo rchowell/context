@@ -38,12 +38,18 @@ pub fn execute(cli: Cli) -> Result<i32> {
                 Ok(i32::from(has_stale))
             }
         }
-        Commands::Sync { cleanup: _, force: _ } => {
+        Commands::Sync { path, cleanup: _, force: _ } => {
             let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
 
-            match cache.sync(None) {
+            // Resolve the document path if provided
+            let resolved = path
+                .as_ref()
+                .map(|p| cache.resolve_doc_path(p))
+                .transpose()?;
+
+            match cache.sync(resolved.as_deref()) {
                 Ok(result) => {
                     output::print_sync(cli.output, &result)?;
                     Ok(i32::from(!result.failed.is_empty()))
@@ -54,6 +60,28 @@ pub fn execute(cli: Cli) -> Result<i32> {
                 }
                 Err(e) => Err(e),
             }
+        }
+        Commands::Find { paths } => {
+            let context_dir = find_context_root_from_cwd()?;
+            let mut cache = Cache::create(context_dir)?;
+            cache.load()?;
+
+            let mut results = Vec::new();
+            let mut has_matches = false;
+
+            for path in &paths {
+                let path_str = path.display().to_string();
+                let result = cache.find_by_reference(&path_str)?;
+                if !result.matches.is_empty() {
+                    has_matches = true;
+                }
+                results.push(result);
+            }
+
+            output::print_find(cli.output, &results)?;
+
+            // Exit code 0 if any matches found, 1 if no matches
+            Ok(i32::from(!has_matches))
         }
     }
 }

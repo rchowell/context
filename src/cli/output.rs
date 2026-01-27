@@ -1,4 +1,4 @@
-use crate::core::models::{Validation, Status, SyncResult};
+use crate::core::models::{FindResult, Status, SyncResult, Validation};
 use crate::error::{ContextError, InvalidReference, Result};
 use serde_json::json;
 use std::path::PathBuf;
@@ -28,6 +28,43 @@ pub fn print_status(format: OutputFormat, statuses: &[Validation]) -> Result<()>
                 })
                 .collect();
             println!("{}", serde_json::to_string_pretty(&json_statuses)?);
+        }
+    }
+    Ok(())
+}
+
+/// Print find results
+pub fn print_find(format: OutputFormat, results: &[FindResult]) -> Result<()> {
+    match format {
+        OutputFormat::Text => {
+            for result in results {
+                if result.matches.is_empty() {
+                    println!("{}: no references found", result.query);
+                } else {
+                    println!("{}:", result.query);
+                    for m in &result.matches {
+                        println!("  {} ({})", m.document.display(), m.status);
+                    }
+                }
+            }
+        }
+        OutputFormat::Json => {
+            let json_results: Vec<_> = results
+                .iter()
+                .map(|r| {
+                    json!({
+                        "query": r.query,
+                        "matches": r.matches.iter().map(|m| {
+                            json!({
+                                "document": m.document.display().to_string(),
+                                "reference": m.reference,
+                                "status": m.status.to_string(),
+                            })
+                        }).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            println!("{}", serde_json::to_string_pretty(&json_results)?);
         }
     }
     Ok(())
