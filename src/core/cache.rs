@@ -1,5 +1,5 @@
 use crate::core::document::Document;
-use crate::core::models::{FindResult, SearchResult, SyncResult, Validation};
+use crate::core::models::{SyncResult, Validation};
 use crate::error::{ContextError, InvalidReference, Result};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -93,36 +93,6 @@ impl Cache {
             results.push(doc.validate()?);
         }
         Ok(results)
-    }
-
-    /// Search for documents matching the given query
-    pub fn search(&self, _query: &str) -> Result<Vec<SearchResult>> {
-        // Deferred to later implementation
-        Ok(Vec::new())
-    }
-
-    /// Find documents that reference the given source files
-    pub fn find(&self, _references: &[&str]) -> Result<Vec<FindResult>> {
-        // Deferred to later implementation
-        Ok(Vec::new())
-    }
-
-    /// Validate a single document or all documents
-    pub fn validate(&self, path: Option<&Path>) -> Result<Vec<Validation>> {
-        match path {
-            Some(p) => {
-                // Validate specific document
-                for doc in &self.documents {
-                    if doc.path == p {
-                        return Ok(vec![doc.validate()?]);
-                    }
-                }
-                Err(crate::error::ContextError::DocumentNotFound(
-                    p.display().to_string(),
-                ))
-            }
-            None => self.status(),
-        }
     }
 
     /// Sync (update hashes) for all or a specific document.

@@ -19,6 +19,8 @@ pub struct Document {
     pub references: HashMap<String, String>,
     /// Last update date (ISO 8601 format: YYYY-MM-DD)
     pub updated: String,
+    /// Content hash of the document body (excluding frontmatter)
+    pub hash: String,
     /// Document body content (after frontmatter)
     pub body: String,
 }
@@ -31,6 +33,7 @@ impl Document {
         description: String,
         references: HashMap<String, String>,
         updated: String,
+        hash: String,
         body: String,
     ) -> Self {
         Self {
@@ -39,6 +42,7 @@ impl Document {
             description,
             references,
             updated,
+            hash,
             body,
         }
     }
@@ -109,6 +113,7 @@ impl Document {
     ///
     /// This replaces all existing references with paths discovered from the body.
     /// Call `prepare_sync()` first to validate paths if atomic behavior is needed.
+    /// The `updated` date is only changed if the document body has changed.
     pub fn sync(&mut self) -> Result<()> {
         let project_root = self.project_root().ok_or_else(|| {
             crate::error::ContextError::SyncError(
@@ -148,8 +153,16 @@ impl Document {
         // Replace all references with newly discovered paths
         self.references = new_references;
 
-        // Update the updated date
-        self.updated = Local::now().format("%Y-%m-%d").to_string();
+        // Compute hash of the document body
+        let new_hash = hash(self.body.as_bytes());
+
+        // Only update the date if the body has changed
+        if self.hash != new_hash {
+            self.updated = Local::now().format("%Y-%m-%d").to_string();
+        }
+
+        // Always update the hash
+        self.hash = new_hash;
 
         // Save to disk
         self.save()

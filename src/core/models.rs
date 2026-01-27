@@ -60,52 +60,6 @@ impl Validation {
     }
 }
 
-/// Search result for a document
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SearchResult {
-    /// Path to the document
-    pub path: PathBuf,
-
-    /// Document description
-    pub description: String,
-
-    /// Matched text snippet (if available)
-    pub snippet: Option<String>,
-}
-
-impl SearchResult {
-    /// Create a new SearchResult
-    pub fn new(path: PathBuf, description: String, snippet: Option<String>) -> Self {
-        Self {
-            path,
-            description,
-            snippet,
-        }
-    }
-}
-
-/// Find result for a document that references given sources
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FindResult {
-    /// Path to the document
-    pub path: PathBuf,
-    /// Description of the document
-    pub description: String,
-    /// Source files this document references
-    pub references: Vec<String>,
-}
-
-impl FindResult {
-    /// Create a new FindResult
-    pub fn new(path: PathBuf, description: String, references: Vec<String>) -> Self {
-        Self {
-            path,
-            description,
-            references,
-        }
-    }
-}
-
 /// Result of a sync operation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncResult {

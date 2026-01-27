@@ -61,12 +61,19 @@ fn parse_with_frontmatter(path: PathBuf, frontmatter_str: &str, body: String) ->
         .unwrap_or("")
         .to_string();
 
+    let hash = fm
+        .get(Value::String("hash".to_string()))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
     Ok(Document::new(
         path,
         slug,
         description,
         references,
         updated,
+        hash,
         body,
     ))
 }
@@ -86,6 +93,7 @@ fn parse_without_frontmatter(path: PathBuf, content: &str) -> Document {
         String::new(),       // empty description
         HashMap::new(),      // empty references
         String::new(),       // empty updated
+        String::new(),       // empty hash
         content.to_string(), // entire content is the body
     )
 }
@@ -116,6 +124,11 @@ pub fn serialize(document: &Document) -> Result<String> {
     fm_map.insert(
         Value::String("updated".to_string()),
         Value::String(document.updated.clone()),
+    );
+
+    fm_map.insert(
+        Value::String("hash".to_string()),
+        Value::String(document.hash.clone()),
     );
 
     let frontmatter = serde_yaml::to_string(&fm_map)?;

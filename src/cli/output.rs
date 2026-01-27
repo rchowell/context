@@ -1,4 +1,4 @@
-use crate::core::models::{Validation, Status, SearchResult, FindResult, SyncResult};
+use crate::core::models::{Validation, Status, SyncResult};
 use crate::error::{ContextError, InvalidReference, Result};
 use serde_json::json;
 use std::path::PathBuf;
@@ -9,18 +9,15 @@ pub fn print_status(format: OutputFormat, statuses: &[Validation]) -> Result<()>
     match format {
         OutputFormat::Text => {
             for status in statuses {
-                println!("{:<12} {}", status.status, status.path.display());
-                if !status.changed.is_empty() {
-                    println!("               changed: {}", status.changed.join(", "));
-                }
-                if !status.missing.is_empty() {
-                    println!("               missing: {}", status.missing.join(", "));
+                if status.status != Status::Valid {
+                    println!("modified:  {}", status.path.display());
                 }
             }
         }
         OutputFormat::Json => {
             let json_statuses: Vec<_> = statuses
                 .iter()
+                .filter(|s| s.status != Status::Valid)
                 .map(|s| {
                     json!({
                         "path": s.path.display().to_string(),
@@ -31,106 +28,6 @@ pub fn print_status(format: OutputFormat, statuses: &[Validation]) -> Result<()>
                 })
                 .collect();
             println!("{}", serde_json::to_string_pretty(&json_statuses)?);
-        }
-    }
-    Ok(())
-}
-
-/// Print validation results
-pub fn print_validation(format: OutputFormat, results: &[Validation]) -> Result<()> {
-    match format {
-        OutputFormat::Text => {
-            for result in results {
-                let status_str = match result.status {
-                    Status::Valid => "✓ VALID",
-                    Status::Stale => "⚠ STALE",
-                    Status::Orphaned => "✗ ORPHANED",
-                };
-                println!("{} {}", status_str, result.path.display());
-
-                if !result.changed.is_empty() {
-                    println!("  Changed files:");
-                    for file in &result.changed {
-                        println!("    - {file}");
-                    }
-                }
-                if !result.missing.is_empty() {
-                    println!("  Missing files:");
-                    for file in &result.missing {
-                        println!("    - {file}");
-                    }
-                }
-            }
-        }
-        OutputFormat::Json => {
-            let json_results: Vec<_> = results
-                .iter()
-                .map(|r| {
-                    json!({
-                        "path": r.path.display().to_string(),
-                        "status": r.status.to_string(),
-                        "changed": r.changed,
-                        "missing": r.missing,
-                    })
-                })
-                .collect();
-            println!("{}", serde_json::to_string_pretty(&json_results)?);
-        }
-    }
-    Ok(())
-}
-
-/// Print search results
-pub fn print_search(format: OutputFormat, results: &[SearchResult]) -> Result<()> {
-    match format {
-        OutputFormat::Text => {
-            for result in results {
-                println!("{}", result.path.display());
-                println!("  {}", result.description);
-                if let Some(snippet) = &result.snippet {
-                    println!("  {snippet}");
-                }
-            }
-        }
-        OutputFormat::Json => {
-            let json_results: Vec<_> = results
-                .iter()
-                .map(|r| {
-                    json!({
-                        "path": r.path.display().to_string(),
-                        "description": r.description,
-                        "snippet": r.snippet,
-                    })
-                })
-                .collect();
-            println!("{}", serde_json::to_string_pretty(&json_results)?);
-        }
-    }
-    Ok(())
-}
-
-/// Print find results
-pub fn print_find(format: OutputFormat, results: &[FindResult]) -> Result<()> {
-    match format {
-        OutputFormat::Text => {
-            for result in results {
-                println!("{}", result.path.display());
-                println!("  {}", result.description);
-                println!("  references: {}", result.references.join(", "));
-            }
-        }
-        OutputFormat::Json => {
-            let json_results: Vec<_> = results
-                .iter()
-                .map(|r| {
-                    json!({
-                        "path": r.path.display().to_string(),
-                        "description": r.description,
-                        "references": r.references,
-                    })
-                })
-                .collect();
-            println!("{}", serde_json::to_string_pretty(&json_results)?);
         }
     }
     Ok(())

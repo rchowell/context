@@ -305,3 +305,76 @@ The library code is in `src/lib.rs`.
     assert!(doc.references.contains_key("src/main.rs"));
     assert!(doc.references.contains_key("src/lib.rs"));
 }
+
+#[test]
+fn test_sync_preserves_updated_when_body_unchanged() {
+    let dir = setup_project();
+
+    // Create a document with a known hash (will be computed on first sync)
+    let doc_content = r#"---
+slug: preserve
+description: ""
+references: {}
+updated: ""
+hash: ""
+---
+
+# Preserve Updated
+
+See `src/main.rs`.
+"#;
+    let doc_path = dir.path().join(".context/guides/preserve.md");
+    fs::write(&doc_path, doc_content).unwrap();
+
+    // First sync - sets the hash and updated date
+    let mut doc = Document::load(&doc_path).unwrap();
+    doc.sync().unwrap();
+
+    let first_updated = doc.updated.clone();
+    let first_hash = doc.hash.clone();
+    assert!(!first_hash.is_empty());
+    assert!(!first_updated.is_empty());
+
+    // Reload and sync again without changes
+    let mut doc = Document::load(&doc_path).unwrap();
+    doc.sync().unwrap();
+
+    // Updated date and hash should remain the same
+    assert_eq!(doc.updated, first_updated);
+    assert_eq!(doc.hash, first_hash);
+}
+
+#[test]
+fn test_sync_updates_hash_and_date_on_body_change() {
+    let dir = setup_project();
+
+    // Create initial document
+    let doc_content = r#"---
+slug: change
+description: ""
+references: {}
+updated: "2020-01-01"
+hash: "initial"
+---
+
+# Original Body
+
+See `src/main.rs`.
+"#;
+    let doc_path = dir.path().join(".context/guides/change.md");
+    fs::write(&doc_path, doc_content).unwrap();
+
+    // Load and sync - body changed from what hash "initial" would represent
+    let mut doc = Document::load(&doc_path).unwrap();
+    let old_hash = doc.hash.clone();
+    assert_eq!(old_hash, "initial");
+
+    doc.sync().unwrap();
+
+    // Hash should be updated to reflect actual body content
+    assert_ne!(doc.hash, old_hash);
+    assert!(!doc.hash.is_empty());
+
+    // Updated date should be changed (since hash was different)
+    assert_ne!(doc.updated, "2020-01-01");
+}

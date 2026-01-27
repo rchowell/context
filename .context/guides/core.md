@@ -2,10 +2,11 @@
 slug: core
 description: ''
 references:
-  src/core/document.rs: bb933bf
-  src/core/models.rs: 2dbe155
-  src/core/cache.rs: 497f2fc
-updated: 2026-01-26
+  src/core/models.rs: c265d27
+  src/core/cache.rs: 3d5ea1e
+  src/core/document.rs: fd7d7d8
+updated: 2026-01-27
+hash: aedfac4
 ---
 
 # Core Module

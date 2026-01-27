@@ -1,23 +1,21 @@
 # Context
 
-Context is a documentation cache system for AI-assisted development. It maintains project knowledge as markdown files with automatic invalidation when source files change.
-
-## What context does.
-
-- 
-
-## What context does not do.
-
-- Author documentation.
-
+Context is a documentation cache system for coding agents. It maintains project
+knowledge as markdown files with automatic invalidation when source files
+change. 
 
 ## Problem
 
-AI coding assistants spend significant tokens exploring codebases repeatedly. Project documentation is often outdated or missing, compounding the problem. Context solves this by treating documentation as a cache layer with explicit dependencies on source files.
+Each coding agent session is a new contributor to your project.
+These agents waste time and tokens exploring entire source code files and
+navigating incomplete, outdated, or missing documentation. Context addresses
+this by currating agent-oriented documentation as a cache-like layer for 
+the disovery phase.
 
 ## How It Works
 
-Documentation files declare their source dependencies in YAML frontmatter:
+Each project gets a `.context` directory via `context init` — humans or agents
+then author markdown documentation in this directory. 
 
 ```yaml
 ---
@@ -31,6 +29,17 @@ updated: 2025-01-21
 ```
 
 When referenced files change, the documentation becomes **stale**. When referenced files are deleted, the documentation becomes **orphaned**. The `context status` command detects both conditions.
+
+**Example**
+
+```sh
+context status
+valid /Users/rch/Projects/Context/.context/references/index.md
+valid /Users/rch/Projects/Context/.context/index.md
+valid /Users/rch/Projects/Context/.context/guides/index.md
+stale /Users/rch/Projects/Context/.context/guides/core.md
+               changed: src/core/models.rs
+```
 
 ## Directory Structure
 
@@ -75,14 +84,11 @@ references:
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `context init [dir]` | Scaffold directory structure |
-| `context status` | Report valid/stale/orphaned docs |
-| `context search <term>` | Full-text search across docs |
-| `context find <files...>` | Find docs referencing given files |
-| `context validate <path>` | Check single doc validity |
-| `context sync [path]` | Update hashes, mark as reviewed |
+| Command               | Purpose                          |
+|-----------------------|----------------------------------|
+| `context init [dir]`  | Scaffold directory structure     |
+| `context status`      | Report valid/stale/orphaned docs |
+| `context sync [path]` | Update hashes, mark as reviewed  |
 
 All commands support `-j, --json` for structured output.
 

@@ -52,18 +52,6 @@ pub enum Commands {
         create: bool,
     },
 
-    /// Validate documents in the cache
-    #[command(about = "Validate cached documents against their hashes")]
-    Validate {
-        /// Recursively validate subdirectories
-        #[arg(short, long)]
-        recursive: bool,
-
-        /// Pattern for files to validate
-        #[arg(short, long, value_name = "PATTERN")]
-        filter: Option<String>,
-    },
-
     /// Show cache status
     #[command(about = "Display status of documents in the cache")]
     Status {
@@ -74,30 +62,6 @@ pub enum Commands {
         /// Show details for each document
         #[arg(short, long)]
         detailed: bool,
-    },
-
-    /// Search documents
-    #[command(about = "Search cached documents by content")]
-    Search {
-        /// Search query
-        #[arg(value_name = "QUERY")]
-        query: String,
-
-        /// Case-sensitive search
-        #[arg(short, long)]
-        case_sensitive: bool,
-
-        /// Limit number of results
-        #[arg(short, long, value_name = "COUNT")]
-        limit: Option<usize>,
-    },
-
-    /// Find a document by hash
-    #[command(about = "Find a cached document by its content hash")]
-    Find {
-        /// Hash to search for
-        #[arg(value_name = "HASH")]
-        hash: String,
     },
 
     /// Synchronize cache metadata

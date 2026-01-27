@@ -13,20 +13,6 @@ pub fn execute(cli: Cli) -> Result<i32> {
             println!("Initialized context cache at {}", path.display());
             Ok(0)
         }
-        Commands::Validate {
-            recursive: _,
-            filter: _,
-        } => {
-            let context_dir = find_context_root_from_cwd()?;
-            let mut cache = Cache::create(context_dir)?;
-            cache.load()?;
-            let statuses = cache.validate(None)?;
-            output::print_validation(cli.output, &statuses)?;
-
-            // Return non-zero if any documents are not valid
-            let has_issues = statuses.iter().any(|s| s.status != crate::core::models::Status::Valid);
-            Ok(i32::from(has_issues))
-        }
         Commands::Status {
             invalid_only,
             detailed: _,
@@ -51,32 +37,6 @@ pub fn execute(cli: Cli) -> Result<i32> {
             } else {
                 Ok(i32::from(has_stale))
             }
-        }
-        Commands::Search {
-            query,
-            case_sensitive: _,
-            limit,
-        } => {
-            let context_dir = find_context_root_from_cwd()?;
-            let mut cache = Cache::create(context_dir)?;
-            cache.load()?;
-            let mut results = cache.search(&query)?;
-
-            if let Some(limit) = limit {
-                results.truncate(limit);
-            }
-
-            output::print_search(cli.output, &results)?;
-            Ok(0)
-        }
-        Commands::Find { hash } => {
-            let context_dir = find_context_root_from_cwd()?;
-            let mut cache = Cache::create(context_dir)?;
-            cache.load()?;
-            let results = cache.find(&[&hash])?;
-
-            output::print_find(cli.output, &results)?;
-            Ok(0)
         }
         Commands::Sync { cleanup: _, force: _ } => {
             let context_dir = find_context_root_from_cwd()?;
