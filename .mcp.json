@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "context": {
+      "type": "stdio",
+      "command": "./target/debug/context",
+      "args": [
+        "serve"
+      ],
+      "env": {}
+    }
+  }
+}

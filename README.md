@@ -84,18 +84,19 @@ references:
 
 ## Commands
 
-| Command               | Purpose                          |
-|-----------------------|----------------------------------|
-| `context init [dir]`  | Scaffold directory structure     |
-| `context status`      | Report valid/stale/orphaned docs |
-| `context sync [path]` | Update hashes, mark as reviewed  |
+| Command               | Purpose                               |
+|-----------------------|---------------------------------------|
+| `context init [dir]`  | Scaffold directory structure          |
+| `context status`      | Report valid/stale/orphaned docs      |
+| `context sync [path]` | Update hashes, mark as reviewed       |
+| `context find [path]` | Find all references to the given path |
 
 All commands support `-j, --json` for structured output.
 
-## Design Principles
+## Install
 
-1. **Human-readable**: Standard markdown, familiar structure, no proprietary formats
-2. **Self-describing**: Each file contains its own dependency metadata
-3. **Git-friendly**: Distributed frontmatter diffs cleanly
-4. **Explicit invalidation**: Dependencies declared, not inferred
-5. **Layered detail**: Guides for concepts, references for specifics, source for implementation
+**Development Install*
+
+```sh
+claude mcp add --transport stdio --scope project context ./target/debug/context serve
+```

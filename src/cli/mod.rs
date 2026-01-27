@@ -1,6 +1,6 @@
 pub mod args;
 pub mod commands;
-pub mod output;
+pub mod console;
 
-pub use args::{Cli, Commands, OutputFormat};
+pub use args::{Cli, Commands, FindArgs, InitArgs, OutputFormat, ServeArgs, StatusArgs, SyncArgs};
 pub use commands::{execute, map_exit_code};

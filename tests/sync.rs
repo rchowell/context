@@ -112,10 +112,10 @@ fn test_sync_no_frontmatter_creates_default() {
     let dir = setup_project();
 
     // Create a document without frontmatter
-    let doc_content = r#"# No Frontmatter
+    let doc_content = r"# No Frontmatter
 
 This document references `src/main.rs`.
-"#;
+";
     let doc_path = dir.path().join(".context/guides/nofm.md");
     fs::write(&doc_path, doc_content).unwrap();
 

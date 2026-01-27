@@ -3,8 +3,8 @@ slug: core
 description: ''
 references:
   src/core/document.rs: fd7d7d8
-  src/core/models.rs: f66b4da
   src/core/cache.rs: 154d6cb
+  src/core/models.rs: f66b4da
 updated: 2026-01-27
 hash: aedfac4
 ---

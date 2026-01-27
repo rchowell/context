@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 /// Context CLI - Documentation cache and validation tool
@@ -37,54 +37,78 @@ impl std::str::FromStr for OutputFormat {
     }
 }
 
+/// Arguments for the init command
+#[derive(Args, Debug)]
+pub struct InitArgs {
+    /// Directory to initialize
+    #[arg(value_name = "PATH", default_value = ".")]
+    pub path: PathBuf,
+
+    /// Create parent directories if they don't exist
+    #[arg(short, long)]
+    pub create: bool,
+}
+
+/// Arguments for the status command
+#[derive(Args, Debug)]
+pub struct StatusArgs {
+    /// Show invalid documents only
+    #[arg(short, long)]
+    pub invalid_only: bool,
+
+    /// Show details for each document
+    #[arg(short, long)]
+    pub detailed: bool,
+}
+
+/// Arguments for the sync command
+#[derive(Args, Debug)]
+pub struct SyncArgs {
+    /// Path to a specific document to sync (syncs all if omitted)
+    #[arg(value_name = "PATH")]
+    pub path: Option<PathBuf>,
+
+    /// Remove stale entries from cache
+    #[arg(short, long)]
+    pub cleanup: bool,
+
+    /// Force full re-hash of all documents
+    #[arg(short, long)]
+    pub force: bool,
+}
+
+/// Arguments for the find command
+#[derive(Args, Debug)]
+pub struct FindArgs {
+    /// Source file paths to search for
+    #[arg(value_name = "PATH", required = true, num_args = 1..)]
+    pub paths: Vec<PathBuf>,
+}
+
+/// Arguments for the serve command
+#[derive(Args, Debug)]
+pub struct ServeArgs {}
+
 /// Available commands
 #[derive(Subcommand)]
 pub enum Commands {
     /// Initialize a new context cache directory
     #[command(about = "Initialize a new documentation cache")]
-    Init {
-        /// Directory to initialize
-        #[arg(value_name = "PATH", default_value = ".")]
-        path: PathBuf,
-
-        /// Create parent directories if they don't exist
-        #[arg(short, long)]
-        create: bool,
-    },
+    Init(InitArgs),
 
     /// Show cache status
     #[command(about = "Display status of documents in the cache")]
-    Status {
-        /// Show invalid documents only
-        #[arg(short, long)]
-        invalid_only: bool,
-
-        /// Show details for each document
-        #[arg(short, long)]
-        detailed: bool,
-    },
+    Status(StatusArgs),
 
     /// Synchronize cache metadata
     #[command(about = "Synchronize cache metadata with actual files")]
-    Sync {
-        /// Path to a specific document to sync (syncs all if omitted)
-        #[arg(value_name = "PATH")]
-        path: Option<PathBuf>,
-
-        /// Remove stale entries from cache
-        #[arg(short, long)]
-        cleanup: bool,
-
-        /// Force full re-hash of all documents
-        #[arg(short, long)]
-        force: bool,
-    },
+    Sync(SyncArgs),
 
     /// Find documents that reference given source files
     #[command(about = "Find documents that reference the given source file(s)")]
-    Find {
-        /// Source file paths to search for
-        #[arg(value_name = "PATH", required = true, num_args = 1..)]
-        paths: Vec<PathBuf>,
-    },
+    Find(FindArgs),
+
+    /// Start the MCP server
+    #[command(about = "Start the Context MCP server")]
+    Serve(ServeArgs),
 }

@@ -1,10 +1,11 @@
 use clap::Parser;
 use context::cli::{execute, map_exit_code, Cli};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
-    match execute(cli) {
+    match execute(cli).await {
         Ok(exit_code) => std::process::exit(exit_code),
         Err(e) => {
             eprintln!("Error: {e}");
