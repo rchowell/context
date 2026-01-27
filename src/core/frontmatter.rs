@@ -6,14 +6,22 @@ use std::path::PathBuf;
 
 /// Parse frontmatter and body from document content
 ///
-/// Expects YAML frontmatter between `---` delimiters at the start of the file.
-/// Returns Document with frontmatter parsed and body content
+/// If YAML frontmatter exists (between `---` delimiters), it is parsed.
+/// If no frontmatter exists, default values are generated:
+/// - slug: derived from filename (without extension)
+/// - description: empty string
+/// - references: empty map
+/// - updated: empty string
 pub fn parse(path: PathBuf, content: &str) -> Result<Document> {
-    let (frontmatter_str, body) = extract_frontmatter(content).ok_or_else(|| {
-        crate::error::ContextError::InvalidDocument("No YAML frontmatter found".to_string())
-    })?;
+    match extract_frontmatter(content) {
+        Some((frontmatter_str, body)) => parse_with_frontmatter(path, &frontmatter_str, body),
+        None => Ok(parse_without_frontmatter(path, content)),
+    }
+}
 
-    let frontmatter: Value = serde_yaml::from_str(&frontmatter_str)?;
+/// Parse a document that has frontmatter
+fn parse_with_frontmatter(path: PathBuf, frontmatter_str: &str, body: String) -> Result<Document> {
+    let frontmatter: Value = serde_yaml::from_str(frontmatter_str)?;
     let fm = frontmatter.as_mapping().ok_or_else(|| {
         crate::error::ContextError::InvalidDocument("Invalid frontmatter format".to_string())
     })?;
@@ -61,6 +69,25 @@ pub fn parse(path: PathBuf, content: &str) -> Result<Document> {
         updated,
         body,
     ))
+}
+
+/// Parse a document without frontmatter, generating default values
+fn parse_without_frontmatter(path: PathBuf, content: &str) -> Document {
+    // Derive slug from filename (without extension)
+    let slug = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    Document::new(
+        path,
+        slug,
+        String::new(),       // empty description
+        HashMap::new(),      // empty references
+        String::new(),       // empty updated
+        content.to_string(), // entire content is the body
+    )
 }
 
 /// Serialize Document back to complete file content with YAML frontmatter
@@ -151,5 +178,16 @@ This is the body.
             Some(&"8a3b2c1".to_string())
         );
         assert!(doc.body.contains("# Authentication"));
+    }
+
+    #[test]
+    fn test_parse_without_frontmatter() {
+        let content = "# Just a document\n\nNo frontmatter here.";
+        let doc = parse(PathBuf::from("guides/example.md"), content).unwrap();
+        assert_eq!(doc.slug, "example");
+        assert_eq!(doc.description, "");
+        assert!(doc.references.is_empty());
+        assert_eq!(doc.updated, "");
+        assert_eq!(doc.body, content);
     }
 }

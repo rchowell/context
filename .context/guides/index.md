@@ -1,7 +1,7 @@
 ---
 slug: index
-description: ""
+description: ''
 references: {}
-updated: ""
+updated: 2026-01-26
 ---
 

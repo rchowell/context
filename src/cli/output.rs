@@ -1,6 +1,7 @@
 use crate::core::models::{Validation, Status, SearchResult, FindResult, SyncResult};
-use crate::error::Result;
+use crate::error::{ContextError, InvalidReference, Result};
 use serde_json::json;
+use std::path::PathBuf;
 use super::args::OutputFormat;
 
 /// Print document status
@@ -178,5 +179,61 @@ pub fn format_error(format: OutputFormat, error: &str) -> String {
     match format {
         OutputFormat::Text => format!("Error: {error}"),
         OutputFormat::Json => serde_json::to_string(&json!({"error": error})).unwrap_or_default(),
+    }
+}
+
+/// Print invalid references error
+pub fn print_invalid_references(
+    format: OutputFormat,
+    documents: &[(PathBuf, Vec<InvalidReference>)],
+) -> Result<()> {
+    match format {
+        OutputFormat::Text => {
+            eprintln!(
+                "Error: Invalid references in {} document(s)",
+                documents.len()
+            );
+            eprintln!();
+            for (doc_path, invalid_refs) in documents {
+                eprintln!("  {}", doc_path.display());
+                for inv in invalid_refs {
+                    eprintln!("    - `{}`: {}", inv.path, inv.reason);
+                }
+            }
+        }
+        OutputFormat::Json => {
+            let json_docs: Vec<_> = documents
+                .iter()
+                .map(|(path, refs)| {
+                    json!({
+                        "document": path.display().to_string(),
+                        "invalid": refs.iter().map(|r| {
+                            json!({
+                                "path": r.path,
+                                "reason": r.reason.to_string(),
+                            })
+                        }).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            let output = json!({
+                "error": "invalid_references",
+                "count": documents.len(),
+                "documents": json_docs,
+            });
+            eprintln!("{}", serde_json::to_string_pretty(&output)?);
+        }
+    }
+    Ok(())
+}
+
+/// Handle a ContextError, printing appropriate output
+pub fn handle_error(format: OutputFormat, error: &ContextError) -> Result<()> {
+    if let ContextError::InvalidReferences { documents, .. } = error {
+        print_invalid_references(format, documents)
+    } else {
+        let msg = format_error(format, &error.to_string());
+        eprintln!("{msg}");
+        Ok(())
     }
 }

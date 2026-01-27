@@ -2,6 +2,15 @@
 
 Context is a documentation cache system for AI-assisted development. It maintains project knowledge as markdown files with automatic invalidation when source files change.
 
+## What context does.
+
+- 
+
+## What context does not do.
+
+- Author documentation.
+
+
 ## Problem
 
 AI coding assistants spend significant tokens exploring codebases repeatedly. Project documentation is often outdated or missing, compounding the problem. Context solves this by treating documentation as a cache layer with explicit dependencies on source files.

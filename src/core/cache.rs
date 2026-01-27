@@ -1,6 +1,6 @@
 use crate::core::document::Document;
 use crate::core::models::{FindResult, SearchResult, SyncResult, Validation};
-use crate::error::Result;
+use crate::error::{ContextError, InvalidReference, Result};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -125,40 +125,58 @@ impl Cache {
         }
     }
 
-    /// Sync (update hashes) for all or a specific document
+    /// Sync (update hashes) for all or a specific document.
+    ///
+    /// This uses a two-phase approach for atomicity:
+    /// 1. Validate all documents first, collecting any invalid references
+    /// 2. Only if all documents are valid, write changes to all of them
+    ///
+    /// If any document has invalid references, no documents are modified.
     pub fn sync(&mut self, doc_path: Option<&Path>) -> Result<SyncResult> {
+        // Determine which documents to sync
+        let doc_indices: Vec<usize> = match doc_path {
+            Some(p) => self
+                .documents
+                .iter()
+                .enumerate()
+                .filter(|(_, doc)| doc.path == p)
+                .map(|(i, _)| i)
+                .collect(),
+            None => (0..self.documents.len()).collect(),
+        };
+
+        // Phase 1: Validate all documents, collect all errors
+        let mut all_invalid: Vec<(PathBuf, Vec<InvalidReference>)> = Vec::new();
+
+        for &idx in &doc_indices {
+            let doc = &self.documents[idx];
+            let invalid = doc.prepare_sync();
+            if !invalid.is_empty() {
+                all_invalid.push((doc.path.clone(), invalid));
+            }
+        }
+
+        // If any documents have invalid references, fail the entire sync
+        if !all_invalid.is_empty() {
+            return Err(ContextError::InvalidReferences {
+                count: all_invalid.len(),
+                documents: all_invalid,
+            });
+        }
+
+        // Phase 2: All documents valid, perform the actual sync
         let mut result = SyncResult::new();
 
-        match doc_path {
-            Some(p) => {
-                // Sync specific document
-                for doc in &mut self.documents {
-                    if doc.path == p {
-                        match doc.sync() {
-                            Ok(()) => {
-                                result.count += 1;
-                                result.updated.push(doc.path.clone());
-                            }
-                            Err(e) => {
-                                result.failed.push(format!("{}: {}", doc.path.display(), e));
-                            }
-                        }
-                        break;
-                    }
+        for &idx in &doc_indices {
+            let doc = &mut self.documents[idx];
+            match doc.sync() {
+                Ok(()) => {
+                    result.count += 1;
+                    result.updated.push(doc.path.clone());
                 }
-            }
-            None => {
-                // Sync all documents
-                for doc in &mut self.documents {
-                    match doc.sync() {
-                        Ok(()) => {
-                            result.count += 1;
-                            result.updated.push(doc.path.clone());
-                        }
-                        Err(e) => {
-                            result.failed.push(format!("{}: {}", doc.path.display(), e));
-                        }
-                    }
+                Err(e) => {
+                    // This shouldn't happen since we validated, but handle it gracefully
+                    result.failed.push(format!("{}: {}", doc.path.display(), e));
                 }
             }
         }

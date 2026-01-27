@@ -1,5 +1,5 @@
-use crate::core::{discover_root_from_cwd, Cache};
-use crate::error::Result;
+use crate::core::{find_context_root_from_cwd, Cache};
+use crate::error::{ContextError, Result};
 
 use super::args::{Commands, Cli};
 use super::output;
@@ -17,7 +17,7 @@ pub fn execute(cli: Cli) -> Result<i32> {
             recursive: _,
             filter: _,
         } => {
-            let context_dir = discover_root_from_cwd()?;
+            let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
             let statuses = cache.validate(None)?;
@@ -31,7 +31,7 @@ pub fn execute(cli: Cli) -> Result<i32> {
             invalid_only,
             detailed: _,
         } => {
-            let context_dir = discover_root_from_cwd()?;
+            let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
             let mut statuses = cache.status()?;
@@ -57,7 +57,7 @@ pub fn execute(cli: Cli) -> Result<i32> {
             case_sensitive: _,
             limit,
         } => {
-            let context_dir = discover_root_from_cwd()?;
+            let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
             let mut results = cache.search(&query)?;
@@ -70,7 +70,7 @@ pub fn execute(cli: Cli) -> Result<i32> {
             Ok(0)
         }
         Commands::Find { hash } => {
-            let context_dir = discover_root_from_cwd()?;
+            let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
             let results = cache.find(&[&hash])?;
@@ -79,14 +79,21 @@ pub fn execute(cli: Cli) -> Result<i32> {
             Ok(0)
         }
         Commands::Sync { cleanup: _, force: _ } => {
-            let context_dir = discover_root_from_cwd()?;
+            let context_dir = find_context_root_from_cwd()?;
             let mut cache = Cache::create(context_dir)?;
             cache.load()?;
-            let result = cache.sync(None)?;
 
-            output::print_sync(cli.output, &result)?;
-
-            Ok(i32::from(!result.failed.is_empty()))
+            match cache.sync(None) {
+                Ok(result) => {
+                    output::print_sync(cli.output, &result)?;
+                    Ok(i32::from(!result.failed.is_empty()))
+                }
+                Err(ContextError::InvalidReferences { documents, .. }) => {
+                    output::print_invalid_references(cli.output, &documents)?;
+                    Ok(1)
+                }
+                Err(e) => Err(e),
+            }
         }
     }
 }
